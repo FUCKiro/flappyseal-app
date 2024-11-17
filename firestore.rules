@@ -1,0 +1,63 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidUsername(username) {
+      return username is string 
+        && username.size() >= 3 
+        && username.size() <= 20
+        && username.matches('^[a-zA-Z0-9_-]+$');
+    }
+
+    function isValidScore(score) {
+      return score is number 
+        && score >= 0 
+        && score <= 1000;
+    }
+
+    function isValidTimestamp(timestamp) {
+      return timestamp is timestamp 
+        && timestamp <= request.time;
+    }
+
+    function isBetterScore() {
+      let existingScore = get(/databases/$(database)/documents/highscores/$(request.auth.uid)).data;
+      return !exists(/databases/$(database)/documents/highscores/$(request.auth.uid)) 
+        || request.resource.data.score > existingScore.score;
+    }
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() 
+        && request.auth.uid == userId
+        && isValidUsername(request.resource.data.username);
+      allow update: if isOwner(userId)
+        && isValidUsername(request.resource.data.username);
+      allow delete: if false;
+    }
+
+    match /highscores/{userId} {
+      allow read: if true;
+      allow create, update: if isAuthenticated() 
+        && request.auth.uid == userId
+        && isValidScore(request.resource.data.score)
+        && isValidUsername(request.resource.data.username)
+        && isValidTimestamp(request.resource.data.timestamp)
+        && request.resource.data.keys().hasOnly(['score', 'userId', 'username', 'timestamp'])
+        && isBetterScore();
+      allow delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

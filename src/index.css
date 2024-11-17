@@ -1,0 +1,23 @@
+@import url('https://fonts.googleapis.com/css2?family=Bangers&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body {
+  overscroll-behavior: none;
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  background-color: rgb(17, 24, 39);
+}
+
+.game-title {
+  font-family: 'Bangers', system-ui;
+  letter-spacing: 2px;
+  text-shadow: 3px 3px 0 rgba(0,0,0,0.2);
+  transform: rotate(-2deg);
+}
